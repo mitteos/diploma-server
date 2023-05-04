@@ -1,13 +1,13 @@
 const uuid = require("uuid")
 const path = require("path")
-const {User} = require("../models/models")
+const {User, Subscription, Post} = require("../models/models")
 const bcrypt = require("bcrypt")
 const ApiError = require("../error/ApiError")
 const jwt = require("jsonwebtoken")
 
-const generateJwt = (id, email, name, surname, birthday, role) => {
+const generateJwt = (id, email, name, surname, image, birthday, role) => {
     return jwt.sign(
-        {id, email, name, surname, birthday, role},
+        {id, email, name, surname, image, birthday, role},
         process.env.SECRET_KEY,
         {expiresIn: "24h"}
     )
@@ -39,8 +39,16 @@ class UserController {
         if (!comparePassword) {
             return next(ApiError.badRequest("Неверный пароль"))
         }
-        const token = generateJwt(user.id, user.email, user.name, user.surname, user.birthday, user.role)
-        return res.json({token: token, user: user})
+        const token = generateJwt(user.id, user.email, user.name, user.surname, user.image, user.birthday, user.role)
+
+        const subscriptions = await Subscription.findAll({where: {subUserId: user.id}})
+        const posts = await Post.findAll({where: {userId: user.id}})
+        const result = {
+            token,
+            posts,
+            subscriptions
+        }
+        return res.json(result)
     }
 
     async setImage(req, res) {
@@ -66,7 +74,14 @@ class UserController {
     async getOne(req, res) {
         const {userId} = req.query
         const user = await User.findOne({where: {id: userId}})
-        return res.json(user)
+        const subscriptions = await Subscription.findAll({where: {subUserId: userId}})
+        const posts = await Post.findAll({where: {userId: userId}})
+        const result = {
+            ...user.dataValues,
+            posts,
+            subscriptions
+        }
+        return res.json(result)
     }
 }
 
