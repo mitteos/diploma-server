@@ -5,7 +5,7 @@ const path = require("path");
 class PostController {
     async create(req, res) {
         const {content, date, userId} = req.body
-        const {image} = req.files
+        const {image} = req.files || {image: null}
 
         let post;
         if(image) {
