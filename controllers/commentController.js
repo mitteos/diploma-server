@@ -2,13 +2,15 @@ const {Comment} = require("../models/models");
 
 class CommentController {
     async create(req, res) {
-        const {userId, postId, content, date} = req.body
-        const comment = await Comment.create({date, userId, postId, content})
+        const {userId, postId, content} = req.body
+        const comment = await Comment.create({userId, postId, content})
         return res.json(comment)
     }
 
-    async getSorted(req, res) {
-
+    async remove(req, res) {
+        const {commentId} = req.body
+        await Comment.destroy({where: {id: commentId}})
+        return res.json({})
     }
 }
 

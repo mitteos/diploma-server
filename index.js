@@ -37,7 +37,6 @@ const wss = new WS.Server({
 wss.on("connection", function connection(ws) {
     ws.on("message", function(message) {
         message = JSON.parse(message)
-        console.log(message)
         switch (message.event) {
             case "connect":
                 setWsId(ws, message.chatId)

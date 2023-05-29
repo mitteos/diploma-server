@@ -4,7 +4,7 @@ const path = require("path");
 
 class PostController {
     async create(req, res) {
-        const {content, date, userId} = req.body
+        const {content, userId} = req.body
         const {image} = req.files || {image: null}
 
         let post;
@@ -19,15 +19,23 @@ class PostController {
     }
 
     async update(req, res) {
-        const {postId, content, date} = req.body
-        const {image} = req.files
+        const {postId, content} = req.body
+        const {image} = req.files || {image: null}
+        const post = await Post.findOne({where: {id: postId}})
         if(image) {
             let fileName = uuid.v4() + ".jpg"
             await image.mv(path.resolve(__dirname, "..", "static", fileName))
+            post.image = fileName
         }
-
-        const post = await Post.update({content, image, date}, {where: {id: postId}})
+        post.content = content
+        await post.save()
         return res.json(post)
+    }
+
+    async delete(req, res) {
+        const {postId} = req.body
+        await Post.destroy({where: {id: postId}})
+        return res.json({})
     }
 
     async getOne(req, res) {
@@ -57,6 +65,9 @@ class PostController {
                     {
                         model: Comment,
                         as: "comments",
+                        include: [
+                            {model: User, attributes: ["id", "name", "surname", "image"]}
+                        ]
                     }
                 ],
                 order: [["createdAt", "DESC"]]
@@ -82,12 +93,44 @@ class PostController {
                     {
                         model: Comment,
                         as: "comments",
+                        include: [
+                            {model: User, attributes: ["id", "name", "surname", "image"]}
+                        ]
                     }
                 ],
                 order: [["createdAt", "DESC"]]
             }
         )
         return res.json(posts)
+    }
+    async search(req, res) {
+        try {
+            const {content} = req.query
+            const posts = await Post.findAll({
+                include: [
+                    {
+                        model: User,
+                        as: "user",
+                        attributes: ["id", "name", "surname", "image"]
+                    },
+                    {
+                        model: Like,
+                        as: "likes"
+                    },
+                    {
+                        model: Comment,
+                        as: "comments",
+                        include: [
+                            {model: User, attributes: ["id", "name", "surname", "image"]}
+                        ]
+                    }
+                ],
+                order: [["createdAt", "DESC"]]})
+            const result = posts.filter(post => post.content.toLowerCase().includes(content.toLowerCase()))
+            return res.json(result)
+        } catch (e) {
+            return res.json(e)
+        }
     }
 }
 
