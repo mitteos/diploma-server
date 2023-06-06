@@ -79,33 +79,37 @@ class UserController {
         return res.json(result);
     }
 
-    async edit(req, res) {
-        const { userId, name, surname, birthday } = req.body;
-        const { image } = req.files || { image: null };
+    async edit(req, res, next) {
+        try {
+            const { userId, name, surname, birthday } = req.body;
+            const { image } = req.files || { image: null };
 
-        const user = await User.findOne({ where: { id: userId } });
+            const user = await User.findOne({ where: { id: userId } });
 
-        if (image) {
-            let fileName = uuid.v4() + ".jpg";
-            await image.mv(path.resolve(__dirname, "..", "static", fileName));
-            user.image = fileName;
+            if (image) {
+                let fileName = uuid.v4() + ".jpg";
+                await image.mv(path.resolve(__dirname, "..", "static", fileName));
+                user.image = fileName;
+            }
+            user.name = name;
+            user.surname = surname;
+            user.birthday = birthday;
+            await user.save();
+
+            const token = await jwt.sign(
+                {
+                    name: user.name,
+                    surname: user.surname,
+                    image: user.image,
+                    birthday: user.birthday,
+                },
+                process.env.SECRET_KEY,
+                { expiresIn: "24h" }
+            );
+            return res.json(token);
+        } catch (e) {
+            return next(ApiError.badRequest("Ошибка редактирования профиля"))
         }
-        user.name = name;
-        user.surname = surname;
-        user.birthday = birthday;
-        await user.save();
-
-        const token = await jwt.sign(
-            {
-                name: user.name,
-                surname: user.surname,
-                image: user.image,
-                birthday: user.birthday,
-            },
-            process.env.SECRET_KEY,
-            { expiresIn: "24h" }
-        );
-        return res.json(token);
     }
 
     async check(req, res) {
@@ -119,34 +123,42 @@ class UserController {
         );
     }
 
-    async search(req, res) {
-        const { username } = req.query;
-        const users = await User.findAll();
-        const filtered = users.filter(
-            (user) =>
-                `${user.name.toLowerCase()} ${user.surname.toLowerCase()}`.includes(
-                    username.toLowerCase()
-                ) ||
-                `${user.surname.toLowerCase()} ${user.name.toLowerCase()}`.includes(
-                    username.toLowerCase()
-                )
-        );
-        return res.json(filtered);
+    async search(req, res, next) {
+        try {
+            const { username } = req.query;
+            const users = await User.findAll();
+            const filtered = users.filter(
+                (user) =>
+                    `${user.name.toLowerCase()} ${user.surname.toLowerCase()}`.includes(
+                        username.toLowerCase()
+                    ) ||
+                    `${user.surname.toLowerCase()} ${user.name.toLowerCase()}`.includes(
+                        username.toLowerCase()
+                    )
+            );
+            return res.json(filtered);
+        } catch (e) {
+            return next(ApiError.badRequest("Ошибка посика пользователей"))
+        }
     }
 
-    async getOne(req, res) {
-        const { userId } = req.query;
-        const user = await User.findOne({ where: { id: userId } });
-        const subscriptions = await Subscription.findAll({
-            where: { subUserId: userId },
-        });
-        const posts = await Post.findAll({ where: { userId: userId } });
-        const result = {
-            ...user.dataValues,
-            posts,
-            subscriptions,
-        };
-        return res.json(result);
+    async getOne(req, res, next) {
+        try {
+            const { userId } = req.query;
+            const user = await User.findOne({ where: { id: userId } });
+            const subscriptions = await Subscription.findAll({
+                where: { subUserId: userId },
+            });
+            const posts = await Post.findAll({ where: { userId: userId } });
+            const result = {
+                ...user.dataValues,
+                posts,
+                subscriptions,
+            };
+            return res.json(result);
+        } catch (e) {
+            return next(ApiError.badRequest("Ошибка поулчения информации о пользователе"))
+        }
     }
 }
 
