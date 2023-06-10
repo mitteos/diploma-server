@@ -9,6 +9,7 @@ router.post("/edit", userController.edit)
 router.get("/auth", authMiddleware, userController.check)
 router.get("/search", userController.search)
 router.get("/get-profile", userController.getOne)
+router.get("/get-popular", userController.getPopular)
 
 
 module.exports = router

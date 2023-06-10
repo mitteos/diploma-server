@@ -1,6 +1,6 @@
 const uuid = require("uuid");
 const path = require("path");
-const { User, Subscription, Post } = require("../models/models");
+const { User, Subscription, Post, Like} = require("../models/models");
 const bcrypt = require("bcrypt");
 const ApiError = require("../error/ApiError");
 const jwt = require("jsonwebtoken");
@@ -158,6 +158,24 @@ class UserController {
             return res.json(result);
         } catch (e) {
             return next(ApiError.badRequest("Ошибка поулчения информации о пользователе"))
+        }
+    }
+
+    async getPopular(req, res, next) {
+        try {
+            const users = await User.findAll({include: [{model: Like, as: "likes"}]})
+            const result = users.map(user => {
+                return {
+                    id: user.id,
+                    name: user.name,
+                    surname: user.surname,
+                    image: user.image,
+                    likes: user.likes
+                }
+            }).sort((a, b) => b.likes.length - a.likes.length)
+            return res.json(result.length > 10 ? result.slice(0, 10) : result)
+        } catch (e) {
+            return next(ApiError.badRequest("Ошибка получения списка популярных пользователей"))
         }
     }
 }
