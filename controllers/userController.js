@@ -178,6 +178,22 @@ class UserController {
             return next(ApiError.badRequest("Ошибка получения списка популярных пользователей"))
         }
     }
+
+    async setRole(req, res, next) {
+        try {
+            const {adminId, userId, role} = req.body
+            const admin = await User.findOne({where: {id: adminId}})
+            if(admin.role !== "ADMIN") {
+                return next(ApiError.badRequest("Доступ для администратора"))
+            }
+            const user = await User.findOne({where: {id: userId}})
+            user.role = role
+            await user.save()
+            return res.json({userId :user.id, role: user.role})
+        } catch (e) {
+            return next(ApiError.badRequest("Ошибка изменения роли"))
+        }
+    }
 }
 
 module.exports = new UserController();
