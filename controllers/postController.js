@@ -45,6 +45,8 @@ class PostController {
         try {
             const {postId} = req.body
             await Post.destroy({where: {id: postId}})
+            await Like.destroy({where: {postId: postId}})
+            await Comment.destroy({where: {postId: postId}})
             return res.json({})
         } catch (e) {
             return next(ApiError.badRequest("Ошибка удаления записи"))
