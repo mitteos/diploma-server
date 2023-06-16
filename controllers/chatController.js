@@ -49,6 +49,13 @@ class ChatController {
                     lastMessage: message.length ? message[0] : null
                 }
             })
+                .sort((a, b) => {
+                    if(a.lastMessage && b.lastMessage) {
+                        const firstDate = new Date(a.lastMessage.createdAt)
+                        const secondDate = new Date(b.lastMessage.createdAt)
+                        return secondDate - firstDate
+                    }
+                })
             return res.json(result)
         // } catch (e) {
         //     return next(ApiError.badRequest(e))
