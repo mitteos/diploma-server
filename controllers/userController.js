@@ -135,7 +135,8 @@ class UserController {
                     `${user.surname.toLowerCase()} ${user.name.toLowerCase()}`.includes(
                         username.toLowerCase()
                     )
-            );
+            )
+                    .filter(user => user.role !== "ADMIN");
             return res.json(filtered);
         } catch (e) {
             return next(ApiError.badRequest("Ошибка посика пользователей"))
@@ -164,7 +165,8 @@ class UserController {
     async getPopular(req, res, next) {
         try {
             const users = await User.findAll({include: [{model: Like, as: "likes"}]})
-            const result = users.map(user => {
+            const result = users.filter(user => user.role !== "ADMIN")
+                .map(user => {
                 return {
                     id: user.id,
                     name: user.name,
@@ -172,7 +174,8 @@ class UserController {
                     image: user.image,
                     likes: user.likes
                 }
-            }).sort((a, b) => b.likes.length - a.likes.length)
+            })
+                .sort((a, b) => b.likes.length - a.likes.length)
             return res.json(result.length > 10 ? result.slice(0, 10) : result)
         } catch (e) {
             return next(ApiError.badRequest("Ошибка получения списка популярных пользователей"))
