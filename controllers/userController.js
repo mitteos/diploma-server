@@ -164,15 +164,18 @@ class UserController {
 
     async getPopular(req, res, next) {
         try {
-            const users = await User.findAll({include: [{model: Like, as: "likes"}]})
+            const users = await User.findAll()
+            const likes = await Like.findAll()
+            const posts = await Post.findAll()
             const result = users.filter(user => user.role !== "ADMIN")
                 .map(user => {
+                    const userPosts = posts.filter(post => post.userId === user.id).map(post => post.id)
                 return {
                     id: user.id,
                     name: user.name,
                     surname: user.surname,
                     image: user.image,
-                    likes: user.likes
+                    likes: likes.filter(like => userPosts.includes(like.postId))
                 }
             })
                 .sort((a, b) => b.likes.length - a.likes.length)
